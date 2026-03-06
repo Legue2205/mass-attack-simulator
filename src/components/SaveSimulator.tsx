@@ -11,6 +11,7 @@ import {
   CONDITIONS,
   SaveResult,
 } from "@/types";
+import { runSaveSimulation } from "@/lib/saves";
 
 interface Props {
   minions: MinionInstance[];
@@ -31,93 +32,9 @@ export default function SaveSimulator({ minions, onMinionsChange }: Props) {
   const [halfOnPass, setHalfOnPass] = useState(true);
   const [noEffectOnPass, setNoEffectOnPass] = useState(false);
   const [result, setResult] = useState<SaveResult | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  async function handleSimulate() {
+  function handleSimulate() {
     if (selected.length === 0) return;
-    setLoading(true);
-
-    const savingThrows: Record<string, number> = {};
-    for (const m of selected) {
-      savingThrows[m.id] = m.savingThrows[ability];
-    }
-
-    try {
-      const res = await fetch("/api/save-throw", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          minionIds: selected.map((m) => m.id),
-          savingThrows,
-          dc,
-          ability,
-          failDamage,
-          failDamageType,
-          failConditions,
-          passDamage: halfOnPass ? "" : passDamage,
-          passDamageType,
-          passConditions: noEffectOnPass ? [] : passConditions,
-        }),
-      });
-      const data: SaveResult = await res.json();
-
-      // If halfOnPass, compute half of each fail damage for those who passed
-      if (halfOnPass) {
-        for (const r of data.results) {
-          if (r.passed) {
-            const failResult = data.results.find(
-              (fr) => !fr.passed && fr.damage > 0
-            );
-            if (failResult) {
-              r.damage = Math.floor(failResult.damage / 2);
-            } else {
-              // No failures to reference, roll fail damage and halve
-              // The API already rolled 0 for pass, so we need to re-derive
-              // Actually we want half of the FAIL formula for each passer
-            }
-          }
-        }
-      }
-
-      setResult(data);
-
-      // Apply damage and conditions to minions
-      onMinionsChange(
-        minions.map((m) => {
-          const r = data.results.find((r) => r.minionId === m.id);
-          if (!r) return m;
-
-          let newHp = m.currentHp;
-          let damage = r.damage;
-
-          // Half on pass override: compute from the fail formula
-          if (halfOnPass && r.passed && failDamage.trim()) {
-            // damage was already set to 0 by API since passDamage was empty
-            // We need to use the fail damage formula / 2 per minion
-            // Instead, let's use a different approach: re-roll for pass = half of fail
-          }
-
-          newHp = Math.max(0, newHp - damage);
-
-          const newConditions = [...m.conditions];
-          for (const c of r.conditions) {
-            if (!newConditions.includes(c)) {
-              newConditions.push(c);
-            }
-          }
-
-          return { ...m, currentHp: newHp, conditions: newConditions };
-        })
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // Better approach: handle half damage on pass server-side
-  async function handleSimulateV2() {
-    if (selected.length === 0) return;
-    setLoading(true);
 
     const savingThrows: Record<string, number> = {};
     for (const m of selected) {
@@ -127,67 +44,57 @@ export default function SaveSimulator({ minions, onMinionsChange }: Props) {
     const effectivePassDamage =
       halfOnPass && failDamage.trim() ? failDamage : passDamage;
 
-    try {
-      const res = await fetch("/api/save-throw", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          minionIds: selected.map((m) => m.id),
-          savingThrows,
-          dc,
-          ability,
-          failDamage,
-          failDamageType,
-          failConditions,
-          passDamage: effectivePassDamage,
-          passDamageType,
-          passConditions: noEffectOnPass ? [] : passConditions,
-        }),
-      });
-      const data: SaveResult = await res.json();
+    const data = runSaveSimulation({
+      minionIds: selected.map((m) => m.id),
+      savingThrows,
+      dc,
+      ability,
+      failDamage,
+      failDamageType,
+      failConditions,
+      passDamage: effectivePassDamage,
+      passDamageType,
+      passConditions: noEffectOnPass ? [] : passConditions,
+    });
 
-      // If halfOnPass, halve the pass damage
-      if (halfOnPass) {
-        for (const r of data.results) {
-          if (r.passed) {
-            r.damage = Math.floor(r.damage / 2);
-          }
-        }
-        // Recalculate total
-        data.totalDamage = data.results.reduce((s, r) => s + r.damage, 0);
-      }
-
-      // Remove conditions from pass results if noEffectOnPass
-      if (noEffectOnPass) {
-        for (const r of data.results) {
-          if (r.passed) {
-            r.conditions = [];
-          }
+    // If halfOnPass, halve the pass damage
+    if (halfOnPass) {
+      for (const r of data.results) {
+        if (r.passed) {
+          r.damage = Math.floor(r.damage / 2);
         }
       }
-
-      setResult(data);
-
-      // Apply damage and conditions to minions
-      onMinionsChange(
-        minions.map((m) => {
-          const r = data.results.find((res) => res.minionId === m.id);
-          if (!r) return m;
-
-          const newHp = Math.max(0, m.currentHp - r.damage);
-          const newConditions = [...m.conditions];
-          for (const c of r.conditions) {
-            if (!newConditions.includes(c)) {
-              newConditions.push(c);
-            }
-          }
-
-          return { ...m, currentHp: newHp, conditions: newConditions };
-        })
-      );
-    } finally {
-      setLoading(false);
+      data.totalDamage = data.results.reduce((s, r) => s + r.damage, 0);
     }
+
+    // Remove conditions from pass results if noEffectOnPass
+    if (noEffectOnPass) {
+      for (const r of data.results) {
+        if (r.passed) {
+          r.conditions = [];
+        }
+      }
+    }
+
+    setResult(data);
+
+    // Apply damage and conditions to minions
+    onMinionsChange(
+      minions.map((m) => {
+        const r = data.results.find((res) => res.minionId === m.id);
+        if (!r) return m;
+
+        const newHp = Math.max(0, m.currentHp - r.damage);
+        const newConditions = [...m.conditions];
+        for (const c of r.conditions) {
+          if (!newConditions.includes(c)) {
+            newConditions.push(c);
+          }
+        }
+
+        return { ...m, currentHp: newHp, conditions: newConditions };
+      })
+    );
   }
 
   function toggleCondition(
@@ -308,7 +215,6 @@ export default function SaveSimulator({ minions, onMinionsChange }: Props) {
             <h3 className="mb-2 text-sm font-medium text-green-400">
               On Pass
             </h3>
-            {/* Quick options */}
             <div className="mb-3 flex gap-3">
               <label className="flex items-center gap-2 text-sm">
                 <input
@@ -397,45 +303,42 @@ export default function SaveSimulator({ minions, onMinionsChange }: Props) {
 
           {/* Simulate button */}
           <button
-            onClick={handleSimulateV2}
-            disabled={loading}
-            className="rounded-lg bg-accent px-6 py-2 font-semibold text-white transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={handleSimulate}
+            className="rounded-lg bg-accent px-6 py-2 font-semibold text-white transition-colors hover:bg-accent-hover"
           >
-            {loading
-              ? "Rolling..."
-              : `Roll ${ability} Save (${selected.length} minions)`}
+            Roll {ability} Save ({selected.length} minions)
           </button>
 
           {/* Results */}
           {result && (
             <div className="rounded-lg border border-card-border bg-background p-4">
-              <div className="mb-3 flex gap-4 text-sm">
+              <div className="mb-3 flex flex-wrap gap-4 text-sm">
                 <span>
-                  <span className="text-green-400 font-medium">
+                  <span className="font-medium text-green-400">
                     {result.totalPassed}
                   </span>{" "}
                   passed
                 </span>
                 <span>
-                  <span className="text-red-400 font-medium">
+                  <span className="font-medium text-red-400">
                     {result.totalFailed}
                   </span>{" "}
                   failed
                 </span>
                 <span>
-                  <span className="text-accent font-medium">
+                  <span className="font-medium text-accent">
                     {result.totalDamage}
                   </span>{" "}
                   total damage
                 </span>
               </div>
-              <div className="space-y-1 max-h-60 overflow-y-auto">
+              <div className="max-h-60 space-y-1 overflow-y-auto">
                 {result.results.map((r) => {
                   const minion = minions.find((m) => m.id === r.minionId);
                   return (
                     <div
                       key={r.minionId}
-                      className={`flex items-center justify-between rounded px-3 py-1.5 text-sm ${
+                      className={`flex flex-wrap items-center justify-between gap-2 rounded px-3 py-1.5 text-sm ${
                         r.passed ? "bg-green-900/10" : "bg-red-900/10"
                       }`}
                     >
@@ -447,7 +350,7 @@ export default function SaveSimulator({ minions, onMinionsChange }: Props) {
                         />
                         <span>{minion?.name || r.minionId}</span>
                       </div>
-                      <div className="flex items-center gap-3 text-muted">
+                      <div className="flex flex-wrap items-center gap-3 text-muted">
                         <span>
                           Roll: {r.roll} (total {r.total})
                         </span>

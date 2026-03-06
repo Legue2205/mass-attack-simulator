@@ -220,9 +220,15 @@ export default function MinionDashboard({
               Mass HP ({selectedCount}):
             </span>
             <input
-              type="number"
+              type="text"
+              inputMode="text"
               value={massHpDelta}
-              onChange={(e) => setMassHpDelta(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === "" || v === "-" || /^-?\d*$/.test(v)) {
+                  setMassHpDelta(v);
+                }
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") applyMassHp();
               }}
@@ -390,11 +396,15 @@ export default function MinionDashboard({
                       -
                     </button>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="text"
                       value={hpDelta[m.id] || ""}
-                      onChange={(e) =>
-                        setHpDelta({ ...hpDelta, [m.id]: e.target.value })
-                      }
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (v === "" || v === "-" || /^-?\d*$/.test(v)) {
+                          setHpDelta({ ...hpDelta, [m.id]: v });
+                        }
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") applyHpDelta(m.id);
                       }}
