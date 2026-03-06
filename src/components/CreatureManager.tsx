@@ -263,17 +263,21 @@ export default function CreatureManager({ presets, onPresetsChange }: Props) {
                         {ability}
                       </span>
                       <input
-                        type="number"
+                        type="text"
+                        inputMode="text"
                         value={editing.savingThrows[ability]}
-                        onChange={(e) =>
-                          setEditing({
-                            ...editing,
-                            savingThrows: {
-                              ...editing.savingThrows,
-                              [ability]: Number(e.target.value),
-                            },
-                          })
-                        }
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          if (v === "" || v === "-" || /^-?\d*$/.test(v)) {
+                            setEditing({
+                              ...editing,
+                              savingThrows: {
+                                ...editing.savingThrows,
+                                [ability]: v === "" || v === "-" ? v as unknown as number : Number(v),
+                              },
+                            });
+                          }
+                        }}
                         className="input-field text-center"
                       />
                     </label>
