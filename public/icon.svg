@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="64" fill="#0f0f13"/>
+  <g transform="translate(256,256)">
+    <!-- Sword icon -->
+    <line x1="0" y1="-140" x2="0" y2="100" stroke="#7c3aed" stroke-width="24" stroke-linecap="round"/>
+    <line x1="-60" y1="40" x2="60" y2="40" stroke="#7c3aed" stroke-width="20" stroke-linecap="round"/>
+    <circle cx="0" cy="120" r="16" fill="#7c3aed"/>
+    <!-- Dice dots -->
+    <circle cx="-120" cy="-80" r="12" fill="#e4e4e7" opacity="0.6"/>
+    <circle cx="-120" cy="-40" r="12" fill="#e4e4e7" opacity="0.6"/>
+    <circle cx="120" cy="-80" r="12" fill="#e4e4e7" opacity="0.6"/>
+    <circle cx="120" cy="0" r="12" fill="#e4e4e7" opacity="0.6"/>
+    <circle cx="120" cy="80" r="12" fill="#e4e4e7" opacity="0.6"/>
+  </g>
+</svg>

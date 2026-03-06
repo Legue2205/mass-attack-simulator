@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Mass Attack Simulator
+
+A D&D mass combat simulator -- build your horde, roll the dice. Designed as an offline-capable PWA for use at the table, even without wifi.
+
+## Features
+
+- **Monster Lab** -- Create and customize creature presets with flexible damage formulas (e.g. `2d6+3`, `1d4+1d8+5`), multiple damage types, saving throw bonuses, and toggleable extra damage
+- **Attack Simulator** -- Build an army from presets, set quantities, toggle advantage/disadvantage, and simulate mass attacks against a target AC with full damage breakdown by type and group
+- **Hidden AC Presets** -- DM sets up labeled AC targets (e.g. "Archer", "Guardian") hidden from players
+- **Minion Dashboard** -- Visual HP tracking with health bars, status conditions, click-to-select, mass HP changes, and bulk condition management
+- **Saving Throw Simulator** -- Roll saves for selected minions with configurable DC, ability, damage, and conditions for pass/fail (with half-damage shortcut)
+- **Save / Load** -- Export/import full app state as JSON to resume sessions later
+- **Offline PWA** -- Works fully offline after first visit. Installable on phones and desktops
+
+## Tech Stack
+
+- Next.js (static export)
+- TypeScript
+- Tailwind CSS
+- Recharts
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Build for Production
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+```
 
-## Learn More
+Outputs a static site to `out/` -- deploy anywhere (Vercel, GitHub Pages, Netlify, etc.).
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy to Vercel
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Push to GitHub and connect to [Vercel](https://vercel.com), or:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npx vercel
+```
 
-## Deploy on Vercel
+## Offline Usage
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Visit the deployed URL once on wifi
+2. On mobile, tap "Add to Home Screen" to install as an app
+3. Works fully offline after that
